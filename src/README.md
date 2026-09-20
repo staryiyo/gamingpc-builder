@@ -1,27 +1,28 @@
 # Gaming PC Builder
 
-Учебный проект по курсу Software Design Patterns (Assignment #1).
-Демонстрирует порождающий паттерн проектирования **Builder** на примере
-пошаговой сборки игрового ПК.
+Coursework project for the Software Design Patterns course (Assignment #1).
+Demonstrates the **Builder** creational design pattern through the
+step-by-step assembly of a gaming PC.
 
-## О паттерне
+## About the pattern
 
-Builder разделяет процесс создания сложного объекта на шаги, позволяя
-одним и тем же процессом строить разные представления объекта, не
-прибегая к громоздкому конструктору с множеством параметров.
+Builder separates the construction of a complex object into steps,
+allowing the same construction process to build different
+representations of an object, instead of relying on a bulky constructor
+with many parameters.
 
-## Структура
+## Structure
 
-- **`GamingPC`** — Product. Неизменяемый (immutable) объект, хранящий
-  конфигурацию ПК (CPU, GPU, RAM, накопитель, БП, охлаждение,
-  материнская плата, корпус).
-- **`GamingPC.Builder`** — Builder. Пошагово настраивает конфигурацию
-  через fluent API (method chaining) и валидирует совместимость
-  компонентов в `build()`.
-- **`PCDirector`** — Director. Содержит готовые пресеты сборки:
+- **`GamingPC`** — Product. An immutable object holding the PC
+  configuration (CPU, GPU, RAM, storage, PSU, cooling, motherboard,
+  case).
+- **`GamingPC.Builder`** — Builder. Configures the build step by step
+  through a fluent API (method chaining) and validates component
+  compatibility in `build()`.
+- **`PCDirector`** — Director. Contains ready-made build presets:
   `buildBudgetPC()`, `buildHighEndPC()`, `buildStreamingPC()`.
-- **`Main`** — Client. Демонстрирует использование Builder-а как через
-  Director, так и напрямую (ручная кастомная сборка).
+- **`Main`** — Client. Demonstrates using the Builder both through the
+  Director and directly (manual custom build).
 
 ## Fluent API
 
@@ -38,27 +39,89 @@ GamingPC pc = new GamingPC.Builder()
         .build();
 ```
 
-## Валидация
+## Validation
 
-`build()` проверяет:
-- наличие обязательных компонентов (CPU, GPU);
-- что мощность БП указана и положительна;
-- совместимость: для топовых видеокарт (RTX) требуется БП не менее
-  650W — иначе выбрасывается `IllegalStateException`.
+`build()` checks:
+- required components are present (CPU, GPU);
+- PSU wattage is specified and positive;
+- compatibility: high-end GPUs (RTX) require a PSU of at least 650W —
+  otherwise an `IllegalStateException` is thrown.
 
-## Применённые принципы Clean Code
+## Clean Code principles applied
 
-1. **Meaningful names** — классы и методы называются в соответствии с
-   назначением (`GamingPC`, `setCpu()`, `buildBudgetPC()`).
-2. **Small methods, single purpose** — каждый метод Builder-а
-   устанавливает ровно одно поле.
-3. **Validated construction** — `build()` не создаёт объект вслепую, а
-   проверяет корректность и совместимость компонентов.
-4. **No magic numbers/strings** — пороговые значения вынесены в
-   именованные константы (`MIN_PSU_FOR_HIGH_END_GPU`).
-5. **Single Responsibility** — `GamingPC` хранит данные, `Builder`
-   собирает, `PCDirector` знает только пресеты.
+1. **Meaningful names** — classes and methods are named after their
+   purpose (`GamingPC`, `setCpu()`, `buildBudgetPC()`).
+2. **Small methods, single purpose** — each Builder method sets exactly
+   one field.
+3. **Validated construction** — `build()` does not create the object
+   blindly; it verifies correctness and component compatibility.
+4. **No magic numbers/strings** — threshold values are extracted into
+   named constants (`MIN_PSU_FOR_HIGH_END_GPU`).
+5. **Single Responsibility** — `GamingPC` holds data, `Builder`
+   assembles it, `PCDirector` only knows the presets.
 
-## Запуск
+## Running
 
-Открыть проект в IntelliJ IDEA → запустить `Main.java`.
+Open the project in IntelliJ IDEA → run `Main.java`.
+
+---
+
+# Assignment #2 — Factory Method & Abstract Factory
+
+Extension of the project: **Factory Method** and **Abstract Factory**
+patterns on the same domain (gaming PC assembly).
+
+## Part A — Factory Method (processors)
+
+- **`Processor`** — Abstract Product. An interface defining the common
+  contract for all processors.
+- **`IntelProcessor`, `AmdProcessor`** — Concrete Products.
+- **`ProcessorFactory`** — Creator (abstract class). Declares the
+  factory method `createProcessor()`.
+- **`IntelProcessorFactory`, `AmdProcessorFactory`** — Concrete
+  Creators, each producing its own processor brand.
+
+```java
+ProcessorFactory factory = new IntelProcessorFactory();
+factory.printProcessorInfo();
+```
+
+## Part B — Abstract Factory (platforms)
+
+- **`Processor`, `GraphicsCard`** — Abstract Products (two product
+  types in the family).
+- **`IntelProcessor`/`AmdProcessor`, `BudgetGraphicsCard`/`HighEndGraphicsCard`**
+  — Concrete Products.
+- **`PCPartsFactory`** — Abstract Factory. An interface with one
+  creation method per product type in the family.
+- **`BudgetPartsFactory`, `HighEndPartsFactory`** — Concrete Factories.
+  Each guarantees a consistent set of parts for its platform (Budget
+  can never produce a high-end GPU).
+- **`Main2`** — Client. Works only through the `PCPartsFactory`,
+  `Processor`, and `GraphicsCard` interfaces — never instantiates
+  `IntelProcessor` or `BudgetGraphicsCard` directly.
+
+```java
+assemblePC(new BudgetPartsFactory(), "Budget PC");
+assemblePC(new HighEndPartsFactory(), "High-End PC");
+```
+
+## Clean Code principles applied
+
+1. **Program to an interface, not an implementation** — `assemblePC()`
+   accepts `PCPartsFactory`, `Processor`, `GraphicsCard` — interfaces,
+   not concrete classes. A new platform requires no changes to the
+   client.
+2. **Meaningful, intention-revealing names** — `ProcessorFactory`,
+   `createProcessor()`, `BudgetPartsFactory` clearly state their
+   purpose.
+3. **Small methods, each doing one thing** — each `createX()` creates
+   exactly one object, with no side logic.
+4. **Single Responsibility** — each class has one job: the product
+   holds data, the factory creates, the client uses.
+5. **Open/Closed Principle** — a new manufacturer is added via a new
+   class (`extends ProcessorFactory` / `implements PCPartsFactory`),
+   with no changes to existing code:
+
+```java
+// Anti-pattern — would require editing this method for every
